@@ -14,7 +14,7 @@ class SSnode:
         self.children = children if children is not None else []
         self.data     = data if data is not None else [] 
         self.centroid = np.mean(np.array([p for p in self.points]), axis=0) if self.points else None
-        self.radius   = self.compute_radius()
+        self.radius   = self.compute_radius() if points is not None else 0.0 
         self.parent   = parent
 
     # Calcula el radio del nodo como la máxima distancia entre el centroide y los puntos contenidos en el nodo
@@ -73,20 +73,27 @@ class SSnode:
     # Divide el nodo en dos a lo largo del eje de máxima varianza
     def split(self, m):
 
-        direction = self.direction_of_max_variance()
-        sorted_indices = np.argsort(np.array(self.points[:,direction]))
-        self.points = np.array(self.points[sorted_indices])
-        self.data = self.data[sorted_indices]
-        self.children = np.array(self.children.sort(key=lambda node:node.centroid[direction]))
-
-        
-        index = self.find_split_index(m)
+        direction = self.direction_of_max_variance()    
         
         if self.leaf:
-            return self.min_variance_split(np.array(self.points),index)
+                 
+            sorted_indices = np.argsort(np.array(self.points[:,direction]))
+            self.points = np.array(self.points[sorted_indices])
+            self.data = self.data[sorted_indices]
+            
+            index = self.find_split_index(m)
+
+            g1,g2 =  self.min_variance_split(self.points,index)
         
-        return self.min_variance_split(np.array(self.children),index)
-         
+        else:
+
+            self.children = np.array(self.children.sort(key=lambda node:node.centroid[direction]))
+
+            index = self.find_split_index(m)
+
+            g1,g2 = self.min_variance_split(self.children,index)
+
+
 
     # Encuentra el índice en el que dividir el nodo para minimizar la varianza total
     def find_split_index(self,m):
@@ -96,12 +103,10 @@ class SSnode:
         minvar = float('inf')
 
         if self.leaf:
-
-            puntos = np.array(self.points)
             
             for i in range(m):
-                g1 = puntos[:,n]
-                g2 = puntos[n,:]
+                g1 = self.points[:n]
+                g2 = self.points[n:]
                 sumvar = np.var(g1) + np.var(g2)
                 if sumvar <= minvar:
                     minvar = sumvar
@@ -110,11 +115,10 @@ class SSnode:
                 n += 1                      
                 
         else:
-            hijos = np.array(self.children)
 
             for i in range(m):
-                g1 = hijos[:,n]
-                g2 = hijos[n,:]
+                g1 = self.children[:n]
+                g2 = self.children[n:]
                 sumvar = np.var(np.array([hijo.centroid for hijo in g1])) + np.var(np.array([hijo.centroid for hijo in g2]))
                 if sumvar <= minvar:
                     minvar = sumvar
@@ -127,8 +131,8 @@ class SSnode:
     # Encuentra la división que minimiza la varianza total
     def min_variance_split(self, values, idx):
 
-        g1 = values[:,idx]
-        g2 = values[idx,:]
+        g1 = values[:idx]
+        g2 = values[idx:]
 
         return g1,g2
 
