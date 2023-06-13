@@ -182,7 +182,43 @@ class SSTree:
     # Inserta un punto en el árbol
     def insert(self, point, data=None):
         # Completar aqui!
-        pass
+        newChild1, newChild2 = self.insert1(self.root, point, data)
+        if newChild1 is not None:
+            self.root = SSnode(leaf = False, children = np.array([newChild1,newChild2]))
+
+        
+    
+    def insert1(self,node,point,data=None):
+
+        if node.leaf:
+            if point in node.points:
+                return None
+            node.points = np.append(np.array(node.points), point)
+            node.data = np.append(np.array(node.data), data)
+            node.update_bounding_envelope()
+
+            if len(node.points) <= self.M:
+                return None
+
+        else:
+
+            closestChild = node.find_closest_child(point)
+            newChild1, newChild2 = self.insert1(closestChild, point,data)
+            if newChild1 == None:
+                node.update_bounding_envelope()
+                return None
+            else:
+                #En esta linea tenemos que borrar el closestChild de node.children . Quedaria algo asi como node.children.delete(ClosestChild)
+                node.children = np.append(np.array(node.children), newChild1)
+                node.children = np.append(np.array(node.children), newChild2)
+
+                node.update_bounding_envelope()
+
+                if len(node.children) <= self.M:
+                    return None
+                
+        return node.split(self.m)
+
 
     # Busca un punto en el árbol y devuelve el nodo que lo contiene si existe
     def search(self, target):
