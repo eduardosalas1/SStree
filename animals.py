@@ -12,7 +12,7 @@ from torch.utils.data.sampler import SubsetRandomSampler
 from torch.utils.data import Dataset
 import torchvision.transforms as transforms
 
-from SSTree import SSTree
+from SSTree2 import SSTree
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 

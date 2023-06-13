@@ -40,17 +40,12 @@ class SSnode:
 
     # Actualiza el envolvente delimitador del nodo recalculando el centroide y el radio
     def update_bounding_envelope(self):
-        # Completar aqui!
-        if self.leaf:
+        
+        puntos = np.array(self.get_entries_centroids())
 
-            self.centroid = np.mean([p for p in self.points], axis=0) if self.points else None 
-        else:
-
-            self.centroid = np.mean(self.get_entries_centroids(), axis=0) if self.children else None
+        self.centroid = np.mean(puntos)
 
         self.compute_radius()
-
-        return 
 
 
 
@@ -73,78 +68,66 @@ class SSnode:
     # Divide el nodo en dos a lo largo del eje de máxima varianza
     def split(self, m):
 
-        direction = self.direction_of_max_variance()    
-        
-        newnode1 = None
-        newnode2 = None
+        splitIdx = self.find_split_index(m)
+
+        node1 = None
+        node2 = None
+
         if self.leaf:
-                 
-            sorted_indices = np.argsort(np.array(self.points[:,direction]))
-            self.points = np.array(self.points[sorted_indices])
-            self.data = self.data[sorted_indices]
             
-            index = self.find_split_index(m)
+            node1 = SSnode(leaf = True, points = self.points[:splitIdx])
+            node2 = SSnode(leaf = True, points = self.points[splitIdx:])
 
-            group1,group2 =  self.min_variance_split(self.points,index)
-            data1,data2 = self.min_variance_split(self.data,index)
-
-            newnode1 = SSnode(leaf = True,points = group1,data = data1)
-            newnode2 = SSnode(leaf = True,points = group2,data = data2)
-        
         else:
 
-            self.children = np.array(self.children.sort(key=lambda node:node.centroid[direction]))
+            node1 = SSnode(children = self.children[:splitIdx])
+            node2 = SSnode(children = self.children[splitIdx:])
 
-            index = self.find_split_index(m)
-
-            group1,group2 = self.min_variance_split(self.children,index)
-
-            newnode1 = SSnode(children = group1)
-            newnode2 = SSnode(children = group2)
+        return node1,node2
 
 
-        return newnode1,newnode2
+
 
     # Encuentra el índice en el que dividir el nodo para minimizar la varianza total
     def find_split_index(self,m):
 
-        idx = m
-        n = m
-        minvar = float('inf')
+        coordinateidx = self.direction_of_max_variance()
+        
+        self.sort_by_coordinate(coordinateidx)
+        
+        puntos = np.array([point[coordinateidx] for point in self.get_entries_centroids()])
+
+        return self.min_variance_split(puntos,m)
+
+    def sort_by_coordinate(self,idx):
 
         if self.leaf:
-            
-            for i in range(m):
-                g1 = self.points[:n]
-                g2 = self.points[n:]
-                sumvar = np.var(g1) + np.var(g2)
-                if sumvar <= minvar:
-                    minvar = sumvar
-                    idx = n
-                
-                n += 1                      
-                
+            sorted_indices = np.argsort(np.array(self.points[:,idx]))
+            self.points = np.array(self.points[sorted_indices])
+            self.data = self.data[sorted_indices]
+
         else:
 
-            for i in range(m):
-                g1 = self.children[:n]
-                g2 = self.children[n:]
-                sumvar = np.var(np.array([hijo.centroid for hijo in g1])) + np.var(np.array([hijo.centroid for hijo in g2]))
-                if sumvar <= minvar:
-                    minvar = sumvar
-                    idx = n
-                
-                n += 1
+            self.children = np.array(self.children.sort(key=lambda node:node.centroid[idx]))
 
-        return idx
 
     # Encuentra la división que minimiza la varianza total
-    def min_variance_split(self, values, idx):
+    def min_variance_split(self, values, m):
+        
+        minVar = float("inf")
 
-        g1 = values[:idx]
-        g2 = values[idx:]
+        splitidx = m
 
-        return g1,g2
+        for i in range(m, len(values)-m):
+            
+            sumvar = np.var(values[:i]) + np.var(values[i:]) 
+            
+            if sumvar < minVar:
+                minVar = sumvar
+                splitidx = i
+
+        return splitidx
+
 
     # Encuentra el eje a lo largo del cual los puntos tienen la máxima varianza
     def direction_of_max_variance(self):
@@ -167,6 +150,10 @@ class SSnode:
 
     # Obtiene los centroides de las entradas del nodo
     def get_entries_centroids(self):
+        
+        if self.leaf:
+            return self.points
+        
         return np.array([child.centroid for child in self.children])
         
 
