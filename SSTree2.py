@@ -192,13 +192,13 @@ class SSTree:
 
         if node.leaf:
             if point in node.points:
-                return None
+                return None,None
             node.points = np.append(np.array(node.points), point)
             node.data = np.append(np.array(node.data), data)
             node.update_bounding_envelope()
 
             if len(node.points) <= self.M:
-                return None
+                return None,None
 
         else:
 
@@ -206,7 +206,7 @@ class SSTree:
             newChild1, newChild2 = self.insert1(closestChild, point,data)
             if newChild1 == None:
                 node.update_bounding_envelope()
-                return None
+                return None,None
             else:
                 node.children = np.array(node.children)
                 index = np.where(node.children == closestChild)[0]
@@ -217,7 +217,7 @@ class SSTree:
                 node.update_bounding_envelope()
 
                 if len(node.children) <= self.M:
-                    return None
+                    return None,None
                 
         return node.split(self.m)
 
@@ -243,6 +243,12 @@ class SSTree:
     # Depth-First K-Nearest Neighbor Algorithm
     def knn(self, q, k=3):
         # Completar aqui!
+
+
+        pass
+
+    def priorityQueue():
+
         pass
 
     # Guarda el árbol en un archivo
