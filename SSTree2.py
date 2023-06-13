@@ -46,7 +46,7 @@ class SSnode:
             self.centroid = np.mean([p for p in self.points], axis=0) if self.points else None 
         else:
 
-            self.centroid = np.mean([child.centroid for child in self.children], axis=0) if self.children else None
+            self.centroid = np.mean(self.get_entries_centroids(), axis=0) if self.children else None
 
         self.compute_radius()
 
@@ -75,6 +75,8 @@ class SSnode:
 
         direction = self.direction_of_max_variance()    
         
+        newnode1 = None
+        newnode2 = None
         if self.leaf:
                  
             sorted_indices = np.argsort(np.array(self.points[:,direction]))
@@ -83,7 +85,11 @@ class SSnode:
             
             index = self.find_split_index(m)
 
-            g1,g2 =  self.min_variance_split(self.points,index)
+            group1,group2 =  self.min_variance_split(self.points,index)
+            data1,data2 = self.min_variance_split(self.data,index)
+
+            newnode1 = SSnode(leaf = True,points = group1,data = data1)
+            newnode2 = SSnode(leaf = True,points = group2,data = data2)
         
         else:
 
@@ -91,9 +97,13 @@ class SSnode:
 
             index = self.find_split_index(m)
 
-            g1,g2 = self.min_variance_split(self.children,index)
+            group1,group2 = self.min_variance_split(self.children,index)
+
+            newnode1 = SSnode(children = group1)
+            newnode2 = SSnode(children = group2)
 
 
+        return newnode1,newnode2
 
     # Encuentra el índice en el que dividir el nodo para minimizar la varianza total
     def find_split_index(self,m):
@@ -157,7 +167,7 @@ class SSnode:
 
     # Obtiene los centroides de las entradas del nodo
     def get_entries_centroids(self):
-        pass
+        return np.array([child.centroid for child in self.children])
         
 
 class SSTree:
